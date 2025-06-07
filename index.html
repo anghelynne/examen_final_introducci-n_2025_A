@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro de Personas</title>
+  <h1>Anghelynne Lucero Cordero Gálvez</h1>
+  <h2>anghelynne</h2>
+  <link rel="stylesheet" href="https://github.com/anghelynne">
+  <h3>https://github.com/anghelynne</h3>
+  <script src="https://unpkg.com/dexie@3.2.2/dist/dexie.js"></script>
+  <style>
+    body {
+      font-family: "Century Gothic", sans-serif;
+      margin: 50px;
+      background-color: #f4f4f4;
+    }
+    input, select {
+      margin: 13px;
+      padding: 16px;
+      font-family: "Century Gothic", sans-serif;
+    }
+    button {
+      padding: 16px 16px;
+      margin: 13px;
+      font-family: "Century Gothic", sans-serif;
+    }
+    ul {
+      margin-top: 20px;
+    }
+    li {
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 13px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-family: "Century Gothic", sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Registrar Persona Deseada</h2>
+
+  <input type="text" id="nombre" placeholder="Nombre">
+  <input type="text" id="apellido" placeholder="Apellido">
+  <input type="number" id="anioNacimiento" placeholder="Año de nacimiento">
+  <input type="number" id="mesNacimiento" placeholder="Mes de nacimiento (1-12)" min="1" max="12">
+  <button id="guardarBtn">Guardar</button>
+
+  <h3>Personas Registradas</h3>
+  <ul id="listaPersonas"></ul>
+
+  <script>
+    const db = new Dexie("PersonasDB");
+    db.version(2).stores({
+      personas: "++id,nombre,apellido,anioNacimiento,mesNacimiento,esBisiesto,esMesPar"
+    });
+
+    function calcularEdad(anioNacimiento) {
+      const anioActual = new Date().getFullYear();
+      return anioActual - anioNacimiento;
+    }
+
+    function esBisiesto(anio) {
+      return (anio % 4 === 0 && anio % 100 !== 0) || (anio % 400 === 0);
+    }
+
+    function esPar(numero) {
+      return numero % 2 === 0;
+    }
+
+    document.getElementById("guardarBtn").addEventListener("click", async () => {
+      const nombre = document.getElementById("nombre").value.trim();
+      const apellido = document.getElementById("apellido").value.trim();
+      const anioNacimiento = parseInt(document.getElementById("anioNacimiento").value);
+      const mesNacimiento = parseInt(document.getElementById("mesNacimiento").value);
+
+      if (!nombre || !apellido || isNaN(anioNacimiento) || isNaN(mesNacimiento) || mesNacimiento < 1 || mesNacimiento > 12) {
+        alert("Por favor, completa todos los campos correctamente.");
+        return;
+      }
+
+      const bisiesto = esBisiesto(anioNacimiento);
+      const mesPar = esPar(mesNacimiento);
+
+      await db.personas.add({
+        nombre,
+        apellido,
+        anioNacimiento,
+        mesNacimiento,
+        esBisiesto: bisiesto,
+        esMesPar: mesPar
+      });
+
+      document.getElementById("nombre").value = "";
+      document.getElementById("apellido").value = "";
+      document.getElementById("anioNacimiento").value = "";
+      document.getElementById("mesNacimiento").value = "";
+
+      listarPersonas();
+    });
+
+    async function listarPersonas() {
+      const lista = document.getElementById("listaPersonas");
+      lista.innerHTML = "";
+
+      const personas = await db.personas.toArray();
+
+      personas.forEach(p => {
+        const edad = calcularEdad(p.anioNacimiento);
+        const li = document.createElement("li");
+        li.textContent = `${p.nombre} ${p.apellido} - Edad: ${edad} años - Año ${p.esBisiesto ? "bisiesto" : "no bisiesto"} - Mes ${p.esMesPar ? "par" : "impar"}`;
+        lista.appendChild(li);
+      });
+    }
+
+    listarPersonas();
+  </script>
+
+</body>
+</html>
